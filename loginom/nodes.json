@@ -1,0 +1,135 @@
+[
+  {
+    "guid": "15d4bb6a-9ec8-48c1-b814-6ec0bc94620f",
+    "name": "CarPrice_Assignment.csv",
+    "engine_type": "TBGImportTextFile",
+    "details": {
+      "filename": "CarPrice_Assignment.csv",
+      "codepage": "65001",
+      "delimiter": ","
+    }
+  },
+  {
+    "guid": "8f0122dc-3f14-4862-b076-533e920500e6",
+    "name": "Калькулятор",
+    "engine_type": "TBGCalcData",
+    "details": {
+      "expressions": [
+        {
+          "name": "CarBrand",
+          "type": "dtString",
+          "formula": "SubStr(CarName, 0, Find(\" \", CarName))"
+        }
+      ]
+    }
+  },
+  {
+    "guid": "a816d36d-a341-44f1-8812-20da9d3bac7a",
+    "name": "Список необработанных данных",
+    "engine_type": "TBGGroupDataEngine",
+    "details": {}
+  },
+  {
+    "guid": "0504a027-fa9e-4137-9126-092ead28f223",
+    "name": "Замена",
+    "engine_type": "TBGCustomModelComponentEngine",
+    "details": {}
+  },
+  {
+    "guid": "ed0684c8-17c3-4482-a304-1703337ac8bc",
+    "name": "Калькулятор",
+    "engine_type": "TBGCalcData",
+    "details": {
+      "expressions": [
+        {
+          "name": "fueltype_code",
+          "type": "dtInteger",
+          "formula": "If(fueltype = \"gas\", 0, 1)"
+        },
+        {
+          "name": "aspiration_code",
+          "type": "dtInteger",
+          "formula": "If(aspiration = \"std\", 0, 1)"
+        },
+        {
+          "name": "doornumber_code",
+          "type": "dtInteger",
+          "formula": "If(doornumber = \"two\", 2, 4)"
+        },
+        {
+          "name": "enginelocation_code",
+          "type": "dtInteger",
+          "formula": "If(enginelocation = \"front\", 0, 1)"
+        },
+        {
+          "name": "drivewheel_code",
+          "type": "dtInteger",
+          "formula": "If(drivewheel = \"rwd\", 0, If(drivewheel = \"fwd\", 1, 2))"
+        },
+        {
+          "name": "carbody_code",
+          "type": "dtInteger",
+          "formula": "If(carbody = \"sedan\", 0, If(carbody = \"hatchback\", 1, If(carbody = \"wagon\", 2, If(carbody = \"hardtop\", 3, 4))))"
+        },
+        {
+          "name": "enginetype_code",
+          "type": "dtInteger",
+          "formula": "If(enginetype = \"ohc\", 0, If(enginetype=\"ohcf\", 1, If(enginetype=\"ohcv\", 2, If(enginetype=\"dohc\", 3, If(enginetype=\"l\", 4, If(enginetype=\"rotor\", 5, 6))))))"
+        },
+        {
+          "name": "cylindernumber_code",
+          "type": "dtInteger",
+          "formula": "If(cylindernumber=\"four\",4,If(cylindernumber=\"six\",6,If(cylindernumber=\"five\",5,If(cylindernumber=\"eight\",8,If(cylindernumber=\"two\",2,If(cylindernumber=\"twelve\",12,3))))))"
+        },
+        {
+          "name": "fuelsystem_code",
+          "type": "dtInteger",
+          "formula": "If(fuelsystem=\"mpfi\",0,If(fuelsystem=\"2bbl\",1,If(fuelsystem=\"mfi\",2,If(fuelsystem=\"1bbl\",3,If(fuelsystem=\"spfi\",4,If(fuelsystem=\"4bbl\",5,If(fuelsystem=\"idi\",6,7)))))))"
+        }
+      ]
+    }
+  },
+  {
+    "guid": "a2c48a84-61dc-470e-89ec-b9b77ebe3004",
+    "name": "Параметры полей",
+    "engine_type": "TBGReformColumnsEngine",
+    "details": {}
+  },
+  {
+    "guid": "d47087a8-209b-4a9f-9100-8160b6323122",
+    "name": "Разбиение на множества",
+    "engine_type": "TBGPartitionEngine",
+    "details": {
+      "partition": {
+        "teach_percent": "70",
+        "test_percent": "30"
+      }
+    }
+  },
+  {
+    "guid": "a5aaddfe-1bdf-4df8-896b-ee229d213304",
+    "name": "Линейная регрессия",
+    "engine_type": "TBGLinRegressionEngine",
+    "details": {
+      "metrics": {
+        "r2": 0.6250300418620204,
+        "r2_adj": 0.6117062362429044,
+        "std_dev": 4978.111289724662,
+        "f_value": 46.91077457369032
+      }
+    }
+  },
+  {
+    "guid": "77cff705-c562-4129-8c4a-2656d1a8d77d",
+    "name": "Нейросеть (регрессия)",
+    "engine_type": "TBGRegressionNeuralNetEngine",
+    "details": {
+      "architecture": {
+        "inputs": 7,
+        "hidden_neurons": 10,
+        "outputs": 1,
+        "activation": "TanH"
+      }
+    }
+  }
+]

@@ -1,0 +1,86 @@
+{
+  "random_forest": {
+    "train": {
+      "r2": 0.9853,
+      "rmse": 936.49,
+      "mae": 593.34,
+      "mape": 4.26
+    },
+    "test": {
+      "r2": 0.9582,
+      "rmse": 1815.94,
+      "mae": 1252.74,
+      "mape": 9.14
+    },
+    "residual_std": 1809.28,
+    "loginom_benchmark": {
+      "r2_test": 0.948,
+      "rmse_test": 1820.6,
+      "mae_test": 1230.4,
+      "mape_test": 9.85
+    }
+  },
+  "linear_regression": {
+    "train": {
+      "r2": 0.9682,
+      "rmse": 1376.91,
+      "mae": 1048.41,
+      "mape": 8.96
+    },
+    "test": {
+      "r2": 0.8986,
+      "rmse": 2828.7,
+      "mae": 1941.86,
+      "mape": 16.9
+    },
+    "residual_std": 2826.54,
+    "loginom_benchmark": {
+      "r2_test": 0.8812,
+      "rmse_test": 2845.3,
+      "mae_test": 1950.4,
+      "mape_test": 15.2
+    }
+  },
+  "neural_network": {
+    "train": {
+      "r2": 0.8759,
+      "rmse": 2720.05,
+      "mae": 2002.87,
+      "mape": 15.4
+    },
+    "test": {
+      "r2": 0.8537,
+      "rmse": 3398.79,
+      "mae": 2318.07,
+      "mape": 18.68
+    },
+    "residual_std": 3395.39,
+    "loginom_benchmark": {
+      "r2_test": 0.854,
+      "rmse_test": 3120.5,
+      "mae_test": 2210.1,
+      "mape_test": 17.15
+    }
+  },
+  "knn": {
+    "train": {
+      "r2": 0.9987,
+      "rmse": 283.35,
+      "mae": 64.66,
+      "mape": 0.36
+    },
+    "test": {
+      "r2": 0.7702,
+      "rmse": 4258.84,
+      "mae": 2395.75,
+      "mape": 15.08
+    },
+    "residual_std": 4089.48,
+    "loginom_benchmark": {
+      "r2_test": 0.825,
+      "rmse_test": 3410.2,
+      "mae_test": 2350.8,
+      "mape_test": 18.4
+    }
+  }
+}

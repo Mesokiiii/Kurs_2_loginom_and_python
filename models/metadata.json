@@ -1,0 +1,22 @@
+{
+  "trained_models": [
+    "random_forest",
+    "linear_regression",
+    "neural_network",
+    "knn"
+  ],
+  "dataset_rows": 205,
+  "train_samples": 164,
+  "test_samples": 41,
+  "target_mean": 13276.710570731706,
+  "target_std": 7969.34350572002,
+  "target_median": 10295.0,
+  "target_min": 5118.0,
+  "target_max": 45400.0,
+  "residual_stds": {
+    "random_forest": 1809.28,
+    "linear_regression": 2826.54,
+    "neural_network": 3395.39,
+    "knn": 4089.48
+  }
+}
