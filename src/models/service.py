@@ -12,7 +12,7 @@ from src.config import (
     MODEL_KEY_MAP, MODEL_NAMES, USD_TO_RUB_RATE, RAW_DATA_PATH,
 )
 from src.data.transformer import CarDataPreprocessor
-from src.models.confidence import calculate_confidence_interval
+from src.models.confidence import calculate_confidence_interval, calculate_price_probability
 from src.models.market_segment import calculate_percentile_and_category, compare_to_market
 
 
@@ -30,6 +30,7 @@ class PredictionResult:
     market_percentile: float
     market_category: str
     comparison_to_average: str
+    price_probability: float = 0.0
 
 
 class ModelService:
@@ -77,6 +78,7 @@ class ModelService:
         price = max(1500.0, float(model.predict(x_trans)[0]))
 
         low, high = calculate_confidence_interval(model, x_trans, price, model_key, self.metrics)
+        prob = calculate_price_probability(model, x_trans, price, model_key, self.metrics)
         pct, cat = calculate_percentile_and_category(price, self.market_prices)
         cmp_avg = compare_to_market(price, self.market_prices)
 
@@ -93,4 +95,9 @@ class ModelService:
             market_percentile=round(pct, 1),
             market_category=cat,
             comparison_to_average=cmp_avg,
+            price_probability=prob,
         )
+
+    def predict_all_models(self, car_features: Dict[str, Any]) -> List[PredictionResult]:
+        """Возвращает прогнозы всех доступных моделей для сравнения."""
+        return [self.predict(car_features, model_selection=name) for name in MODEL_NAMES]
