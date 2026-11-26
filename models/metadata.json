@@ -1,10 +1,18 @@
 {
+  "model_version": "v2.2",
+  "train_split_label": "80% обучение (164 авто) / 20% тест (41 авто)",
   "trained_models": [
     "random_forest",
     "linear_regression",
     "neural_network",
     "knn"
   ],
+  "model_versions": {
+    "random_forest": "v2.2",
+    "linear_regression": "v2.2",
+    "neural_network": "v2.2",
+    "knn": "v2.2"
+  },
   "dataset_rows": 205,
   "train_samples": 164,
   "test_samples": 41,

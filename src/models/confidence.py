@@ -53,3 +53,25 @@ def calculate_price_probability(
         prob = math.erf(band / (std_err * math.sqrt(2.0))) * 100.0
 
     return round(min(99.0, max(5.0, prob)), 1)
+
+
+def describe_price_probability(
+    prob: float,
+    price_rub: float,
+    tolerance: float = 0.15,
+) -> Dict[str, Any]:
+    """Возвращает подробную расшифровку вероятности цены, уровня надёжности и рублёвого коридора."""
+    if prob >= 80.0:
+        level = "Высокая надёжность (80–99%)"
+    elif prob >= 60.0:
+        level = "Средняя надёжность (60–79%)"
+    else:
+        level = "Низкая надёжность (5–59%)"
+
+    return {
+        "level": level,
+        "band_low_rub": round(price_rub * (1.0 - tolerance), 0),
+        "band_high_rub": round(price_rub * (1.0 + tolerance), 0),
+        "subject": "Вероятность попадания реальной рыночной цены в коридор ±15% от прогноза модели",
+        "valid_range": "5% – 99% (с ограничителем экстремальных значений)",
+    }

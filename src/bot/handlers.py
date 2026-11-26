@@ -5,12 +5,23 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
-from src.config import CAR_PRESETS, FEATURE_DEFAULTS, MODEL_NAMES
+from src.config import (
+    BODY_LABELS,
+    CAR_PRESETS,
+    FEATURE_DEFAULTS,
+    FEATURE_RANGES,
+    MODEL_NAMES,
+    MODEL_VERSION,
+    USD_TO_RUB_RATE,
+    format_model_with_quality,
+    format_rub,
+)
 from src.models.service import ModelService
 from src.storage.repository import get_overall_stats, get_user_history, log_prediction
 from src.bot.formatting import format_history, format_prediction, format_presets_overview
 from src.bot.keyboards import (
     BTN_CANCEL,
+    BTN_HELP,
     BTN_HISTORY,
     BTN_PREDICT,
     BTN_PRESETS,
@@ -35,22 +46,57 @@ def _parse_float(text: str, min_val: float, max_val: float) -> float | None:
     return None
 
 
+def _build_help_text(service: ModelService) -> str:
+    metrics = service.get_metrics_summary()
+    hp_lo, hp_hi, _ = FEATURE_RANGES["horsepower"]
+    eng_lo, eng_hi, _ = FEATURE_RANGES["enginesize"]
+    w_lo, w_hi, _ = FEATURE_RANGES["curbweight"]
+    models_lines = "\n".join(
+        f"  • {format_model_with_quality(name, metrics)}" for name in MODEL_NAMES
+    )
+    return (
+        f"<b>Справка — CarPrice Predictor ML (модели {MODEL_VERSION})</b>\n\n"
+        "<b>Как пользоваться ботом:</b>\n"
+        "1. «Пресеты авто» — мгновенный расчёт 4 типовых конфигураций.\n"
+        "2. «Рассчитать авто» — пошаговый ввод марки, кузова, мощности, объёма, массы и модели.\n"
+        "3. «История» и «Статистика» — просмотр расчётов из локальной базы SQLite.\n\n"
+        "<b>Ограничители числовых параметров:</b>\n"
+        f"• Мощность двигателя: <b>{hp_lo:g}–{hp_hi:g} л.с.</b>\n"
+        f"• Объём двигателя: <b>{eng_lo:g}–{eng_hi:g} куб. дюймов (cu in)</b>\n"
+        f"• Снаряжённая масса: <b>{w_lo:g}–{w_hi:g} фунтов (lbs)</b>\n\n"
+        "<b>Вероятность цены (±15%):</b>\n"
+        "Показывает вероятность попадания реальной рыночной цены в коридор ±15% от прогноза модели. "
+        "Шкала ограничена диапазоном <b>5%–99%</b>:\n"
+        "• <b>80–99%</b> — высокая надёжность;\n"
+        "• <b>60–79%</b> — средняя надёжность;\n"
+        "• <b>5–59%</b> — низкая надёжность.\n\n"
+        "<b>Доступные модели (версия и качество на тесте):</b>\n"
+        f"{models_lines}\n\n"
+        "Все цены отображаются в рублях (₽)."
+    )
+
+
 def build_router(service: ModelService) -> Router:
     """Создаёт роутер с обработчиками бота."""
     router = Router()
     preset_items = list(CAR_PRESETS.items())
 
     @router.message(CommandStart())
-    @router.message(Command("help"))
     async def cmd_start(message: Message, state: FSMContext) -> None:
         await state.clear()
         await message.answer(
-            "<b>CarPrice Predictor ML</b>\n\n"
-            "Бот оценивает стоимость автомобиля по характеристикам и показывает "
-            "вероятность попадания цены в диапазон ±15%.\n\n"
-            "Выберите раздел в меню ниже:",
+            f"<b>CarPrice Predictor ML (модели {MODEL_VERSION})</b>\n\n"
+            "Бот оценивает рыночную стоимость автомобиля в рублях (₽), рассчитывает "
+            "95% доверительный интервал и вероятность попадания цены в коридор ±15%.\n\n"
+            "Выберите раздел в меню ниже или нажмите «Справка»:",
             reply_markup=main_menu_kb(),
         )
+
+    @router.message(Command("help"))
+    @router.message(F.text == BTN_HELP)
+    async def cmd_help(message: Message, state: FSMContext) -> None:
+        await state.clear()
+        await message.answer(_build_help_text(service), reply_markup=main_menu_kb())
 
     @router.message(F.text == BTN_CANCEL)
     @router.message(Command("cancel"))
@@ -72,11 +118,13 @@ def build_router(service: ModelService) -> Router:
             return
 
         name, data = preset_items[idx]
+        metrics = service.get_metrics_summary()
         res = service.predict(data, model_selection=MODEL_NAMES[0])
+        model_label = format_model_with_quality(res.model_key, metrics)
         user = callback.from_user
-        log_prediction(user.id, res.price_usd, res.price_rub, res.model_name, data, user.username)
+        log_prediction(user.id, res.price_usd, res.price_rub, model_label, data, user.username)
 
-        await callback.message.answer(format_prediction(res, data, title=name))
+        await callback.message.answer(format_prediction(res, data, title=name, metrics=metrics))
         await callback.answer()
 
     @router.message(F.text == BTN_PREDICT)
@@ -101,43 +149,66 @@ def build_router(service: ModelService) -> Router:
     @router.callback_query(PredictForm.carbody, F.data.startswith("body:"))
     async def step_body(callback: CallbackQuery, state: FSMContext) -> None:
         body = callback.data.split(":")[1]
+        body_ru = BODY_LABELS.get(body, body.capitalize())
+        hp_lo, hp_hi, _ = FEATURE_RANGES["horsepower"]
         await state.update_data(carbody=body)
         await state.set_state(PredictForm.horsepower)
         await callback.message.answer(
-            f"Кузов: <b>{body.capitalize()}</b>\n"
-            "Шаг 3/6. Введите мощность двигателя в л.с. (от 48 до 288, например 110):"
+            f"Кузов: <b>{body_ru}</b>\n"
+            f"Шаг 3/6. Введите мощность двигателя в л.с. "
+            f"(ограничитель: от {hp_lo:g} до {hp_hi:g}, например 110):"
         )
         await callback.answer()
 
     @router.message(PredictForm.horsepower)
     async def step_horsepower(message: Message, state: FSMContext) -> None:
-        hp = _parse_float(message.text or "", 48.0, 288.0)
+        hp_lo, hp_hi, _ = FEATURE_RANGES["horsepower"]
+        hp = _parse_float(message.text or "", hp_lo, hp_hi)
         if hp is None:
-            await message.answer("Введите число от 48 до 288.")
+            await message.answer(
+                f"Сработал ограничитель диапазона. Введите мощность двигателя от {hp_lo:g} до {hp_hi:g} л.с."
+            )
             return
+        eng_lo, eng_hi, _ = FEATURE_RANGES["enginesize"]
         await state.update_data(horsepower=hp)
         await state.set_state(PredictForm.enginesize)
-        await message.answer("Шаг 4/6. Введите объем двигателя в cu in (от 61 до 326, например 130):")
+        await message.answer(
+            f"Шаг 4/6. Введите объём двигателя в куб. дюймах (cu in) "
+            f"(ограничитель: от {eng_lo:g} до {eng_hi:g}, например 130):"
+        )
 
     @router.message(PredictForm.enginesize)
     async def step_enginesize(message: Message, state: FSMContext) -> None:
-        eng = _parse_float(message.text or "", 61.0, 326.0)
+        eng_lo, eng_hi, _ = FEATURE_RANGES["enginesize"]
+        eng = _parse_float(message.text or "", eng_lo, eng_hi)
         if eng is None:
-            await message.answer("Введите число от 61 до 326.")
+            await message.answer(
+                f"Сработал ограничитель диапазона. Введите объём двигателя от {eng_lo:g} до {eng_hi:g} куб. дюймов."
+            )
             return
+        w_lo, w_hi, _ = FEATURE_RANGES["curbweight"]
         await state.update_data(enginesize=eng)
         await state.set_state(PredictForm.curbweight)
-        await message.answer("Шаг 5/6. Введите массу автомобиля в lbs (от 1488 до 4066, например 2500):")
+        await message.answer(
+            f"Шаг 5/6. Введите снаряжённую массу автомобиля в фунтах (lbs) "
+            f"(ограничитель: от {w_lo:g} до {w_hi:g}, например 2500):"
+        )
 
     @router.message(PredictForm.curbweight)
     async def step_curbweight(message: Message, state: FSMContext) -> None:
-        weight = _parse_float(message.text or "", 1488.0, 4066.0)
+        w_lo, w_hi, _ = FEATURE_RANGES["curbweight"]
+        weight = _parse_float(message.text or "", w_lo, w_hi)
         if weight is None:
-            await message.answer("Введите число от 1488 до 4066.")
+            await message.answer(
+                f"Сработал ограничитель диапазона. Введите массу автомобиля от {w_lo:g} до {w_hi:g} фунтов."
+            )
             return
         await state.update_data(curbweight=weight)
         await state.set_state(PredictForm.model)
-        await message.answer("Шаг 6/6. Выберите модель ML:", reply_markup=models_kb())
+        await message.answer(
+            "Шаг 6/6. Выберите модель машинного обучения (в скобках указана точность R²):",
+            reply_markup=models_kb(service.get_metrics_summary()),
+        )
 
     @router.callback_query(PredictForm.model, F.data.startswith("model:"))
     async def step_model(callback: CallbackQuery, state: FSMContext) -> None:
@@ -148,13 +219,15 @@ def build_router(service: ModelService) -> Router:
         features = dict(FEATURE_DEFAULTS)
         features.update(form_data)
 
+        metrics = service.get_metrics_summary()
         res = service.predict(features, model_selection=model_name)
+        model_label = format_model_with_quality(res.model_key, metrics)
         user = callback.from_user
-        log_prediction(user.id, res.price_usd, res.price_rub, res.model_name, features, user.username)
+        log_prediction(user.id, res.price_usd, res.price_rub, model_label, features, user.username)
 
         await state.clear()
         await callback.message.answer(
-            format_prediction(res, features),
+            format_prediction(res, features, metrics=metrics),
             reply_markup=main_menu_kb(),
         )
         await callback.answer()
@@ -169,11 +242,12 @@ def build_router(service: ModelService) -> Router:
     @router.message(Command("stats"))
     async def show_stats(message: Message) -> None:
         st = get_overall_stats()
+        avg_rub = st["avg_predicted_price_usd"] * USD_TO_RUB_RATE
         await message.answer(
-            "<b>Статистика базы расчётов</b>\n\n"
+            "<b>Статистика локальной базы SQLite</b>\n\n"
             f"Всего расчётов: <b>{st['total_queries']}</b>\n"
             f"Пользователей: <b>{st['unique_users']}</b>\n"
-            f"Средняя цена: <b>${st['avg_predicted_price_usd']:,.0f}</b>\n"
+            f"Средняя прогнозная цена: <b>{format_rub(avg_rub)}</b>\n"
             f"Популярная марка: <b>{str(st['top_brand']).capitalize()}</b>\n"
             f"Популярная модель: <b>{st['top_model']}</b>"
         )

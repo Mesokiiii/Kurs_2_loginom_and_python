@@ -15,6 +15,8 @@ from src.config import (
     TARGET_COL,
     RANDOM_STATE,
     TEST_SIZE,
+    MODEL_VERSION,
+    TRAIN_SPLIT_LABEL,
     MODEL_FILE_MAP,
     PREPROCESSOR_FILE,
     LOGINOM_BENCHMARKS,
@@ -52,6 +54,7 @@ def train_and_evaluate_all(
     regressors = create_regressors()
     trained_models: Dict[str, Any] = {}
     metrics_summary: Dict[str, Any] = {}
+    residual_stds: Dict[str, float] = {}
 
     for name, model in regressors.items():
         model.fit(X_train, y_train)
@@ -60,12 +63,14 @@ def train_and_evaluate_all(
         train_pred = model.predict(X_train)
         test_pred = model.predict(X_test)
         residuals = y_test - test_pred
-        std_err = float(np.std(residuals))
+        std_err = round(float(np.std(residuals)), 2)
+        residual_stds[name] = std_err
 
         metrics_summary[name] = {
+            "version": MODEL_VERSION,
             "train": compute_metrics(y_train, train_pred),
             "test": compute_metrics(y_test, test_pred),
-            "residual_std": round(std_err, 2),
+            "residual_std": std_err,
             "loginom_benchmark": LOGINOM_BENCHMARKS.get(name, {}),
         }
 
@@ -81,10 +86,22 @@ def train_and_evaluate_all(
         json.dump(metrics_summary, f, indent=2, ensure_ascii=False)
 
     metadata = {
+        "model_version": MODEL_VERSION,
+        "train_split_label": TRAIN_SPLIT_LABEL,
+        "trained_models": list(trained_models.keys()),
+        "model_versions": {k: MODEL_VERSION for k in trained_models.keys()},
         "dataset_rows": len(df_raw),
-        "features_count": X_train.shape[1],
+        "train_samples": int(len(X_train_raw)),
+        "test_samples": int(len(X_test_raw)),
+        "features_count": int(X_train.shape[1]),
         "random_state": RANDOM_STATE,
         "test_size": TEST_SIZE,
+        "target_mean": float(np.mean(y)),
+        "target_std": float(np.std(y)),
+        "target_median": float(np.median(y)),
+        "target_min": float(np.min(y)),
+        "target_max": float(np.max(y)),
+        "residual_stds": residual_stds,
     }
     with open(METADATA_PATH, "w", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2, ensure_ascii=False)

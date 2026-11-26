@@ -17,15 +17,21 @@ from src.config.paths import (
 from src.config.meta import (
     APP_NAME,
     APP_VERSION,
+    MODEL_VERSION,
+    TRAIN_SPLIT_LABEL,
     STUDENT_NAME,
     STUDENT_GROUP,
+    SUPERVISOR_NAME,
     UNIVERSITY_NAME,
+    DEPARTMENT_NAME,
     COURSE_TOPIC,
     COURSE_VARIANT,
+    TELEGRAM_BOT_HANDLE,
     USD_TO_RUB_RATE,
     RANDOM_STATE,
     TEST_SIZE,
     CV_FOLDS,
+    format_rub,
 )
 from src.config.features import (
     BRAND_CORRECTIONS,
@@ -38,6 +44,10 @@ from src.config.features import (
     ALLOWED_FUELS,
     ALLOWED_ASPIRATIONS,
     ALLOWED_DRIVES,
+    DRIVE_LABELS,
+    BODY_LABELS,
+    FUEL_LABELS,
+    ASPIRATION_LABELS,
 )
 from src.config.presets import (
     CAR_PRESETS,
@@ -50,4 +60,6 @@ from src.config.benchmarks import (
     MODEL_FILE_MAP,
     PREPROCESSOR_FILE,
     MODEL_KEY_MAP,
+    MODEL_REGISTRY_INFO,
+    format_model_with_quality,
 )

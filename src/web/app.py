@@ -10,13 +10,21 @@ if str(ROOT_DIR) not in sys.path:
 import pandas as pd
 import streamlit as st
 
-from src.config import APP_NAME, APP_VERSION, COURSE_VARIANT, RAW_DATA_PATH
+from src.config import (
+    APP_NAME,
+    APP_VERSION,
+    COURSE_VARIANT,
+    MODEL_VERSION,
+    RAW_DATA_PATH,
+    TRAIN_SPLIT_LABEL,
+)
 from src.data.cleaner import clean_car_dataframe
 from src.models.service import ModelService
 from src.web.predict_page import render_predict_page
 from src.web.presets_page import render_presets_page
 from src.web.olap_page import render_olap_page
 from src.web.history_page import render_history_page
+from src.web.help_page import render_help_page
 
 
 @st.cache_resource
@@ -42,16 +50,20 @@ def main() -> None:
         "Прогнозирование",
         "Пресеты авто",
         "Аналитика (OLAP)",
-        "История и о проекте",
+        "История (SQLite)",
+        "Справка о проекте",
     ]
-    if "section" not in st.session_state:
+    if "section" not in st.session_state or st.session_state["section"] not in sections:
         st.session_state["section"] = sections[0]
 
     with st.sidebar:
         st.title(APP_NAME)
-        st.caption(f"Версия {APP_VERSION} · Вариант {COURSE_VARIANT}")
+        st.caption(f"Приложение v{APP_VERSION} · Модели {MODEL_VERSION} · Вариант {COURSE_VARIANT}")
         st.divider()
         section = st.radio("Разделы", sections, key="section")
+        st.divider()
+        st.caption(f"Выборка: {TRAIN_SPLIT_LABEL}")
+        st.caption("Все цены отображаются в рублях (₽).")
 
     service = get_service()
 
@@ -61,8 +73,10 @@ def main() -> None:
         render_presets_page(service)
     elif section == "Аналитика (OLAP)":
         render_olap_page(get_market_data())
-    else:
+    elif section == "История (SQLite)":
         render_history_page(service)
+    else:
+        render_help_page(service)
 
 
 if __name__ == "__main__":

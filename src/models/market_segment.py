@@ -3,6 +3,8 @@
 from typing import Tuple, List
 import numpy as np
 
+from src.config import USD_TO_RUB_RATE, format_rub
+
 
 def calculate_percentile_and_category(
     predicted_price: float,
@@ -27,12 +29,13 @@ def calculate_percentile_and_category(
 
 
 def compare_to_market(predicted_price: float, market_prices: List[float]) -> str:
-    """Сравнение прогнозной цены со средней стоимостью на рынке."""
+    """Сравнение прогнозной цены со средней стоимостью на рынке (в рублях)."""
     avg_price = float(np.mean(market_prices)) if market_prices else 13277.0
+    avg_rub_str = format_rub(avg_price * USD_TO_RUB_RATE)
     diff_pct = ((predicted_price - avg_price) / avg_price) * 100.0
     if abs(diff_pct) < 3.0:
-        return f"Около среднего по рынку (${avg_price:,.0f})"
+        return f"Около среднего по рынку ({avg_rub_str})"
     elif diff_pct > 0:
-        return f"Выше среднего (${avg_price:,.0f}) на +{diff_pct:.1f}%"
+        return f"Выше среднего по рынку ({avg_rub_str}) на +{diff_pct:.1f}%"
     else:
-        return f"Ниже среднего (${avg_price:,.0f}) на {diff_pct:.1f}%"
+        return f"Ниже среднего по рынку ({avg_rub_str}) на {diff_pct:.1f}%"

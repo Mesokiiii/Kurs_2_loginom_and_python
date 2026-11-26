@@ -62,3 +62,27 @@ ALLOWED_BODIES: List[str] = ["sedan", "hatchback", "wagon", "hardtop", "converti
 ALLOWED_FUELS: List[str] = ["gas", "diesel"]
 ALLOWED_ASPIRATIONS: List[str] = ["std", "turbo"]
 ALLOWED_DRIVES: List[str] = ["fwd", "rwd", "4wd"]
+
+DRIVE_LABELS: Dict[str, str] = {
+    "fwd": "Передний привод (FWD)",
+    "rwd": "Задний привод (RWD)",
+    "4wd": "Полный привод (4WD)",
+}
+
+BODY_LABELS: Dict[str, str] = {
+    "sedan": "Седан",
+    "hatchback": "Хэтчбек",
+    "wagon": "Универсал",
+    "hardtop": "Хардтоп (купе)",
+    "convertible": "Кабриолет",
+}
+
+FUEL_LABELS: Dict[str, str] = {
+    "gas": "Бензин",
+    "diesel": "Дизель",
+}
+
+ASPIRATION_LABELS: Dict[str, str] = {
+    "std": "Атмосферный",
+    "turbo": "Турбированный (турбо)",
+}
